@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  school-api
+
+  Sample SAM Template for school-api
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev 
+      - qa
+      - prod
+  ClusterARN:
+    Type: String 
+  SecretARN:
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 3
+    Environment:
+      Variables:
+        STAGE: !Ref Stage 
+        CLUSTERARN: !Ref ClusterARN 
+        SECRETARN: !Ref SecretARN
+Resources:
+  SchoolApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+  GetSchoolsFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: get_schools/
+      Policies:
+        - AmazonRDSDataFullAccess
+        - Statement:
+          - Sid: GetParam
+            Effect: Allow
+            Action:
+            - ssm:GetParameters
+            - ssm:GetParameter
+            Resource: '*'
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Events:
+        GetSchools:
+          Type: Api 
+          Properties:
+            Path: /get_schools
+            Method: get
+            RestApiId: !Ref SchoolApi
+  GetCourseFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_course/
+      Policies:
+        - AmazonRDSDataFullAccess
+        - Statement:
+          - Sid: GetParam
+            Effect: Allow
+            Action:
+            - ssm:GetParameters
+            - ssm:GetParameter
+            Resource: '*'
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Events:
+        GetCourse:
+          Type: Api 
+          Properties:
+            Path: /get_course/{school_id}/{course_id}
+            Method: get
+            RestApiId: !Ref SchoolApi
+  GetGradesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_grades/
+      Policies:
+        - AmazonRDSDataFullAccess
+        - Statement:
+          - Sid: GetParam
+            Effect: Allow
+            Action:
+            - ssm:GetParameters
+            - ssm:GetParameter
+            Resource: '*'
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Events:
+        GetGrades:
+          Type: Api 
+          Properties:
+            Path: /get_grades/{student_id}
+            Method: get
+            RestApiId: !Ref SchoolApi
+
+Outputs:
+  SchoolsApi:
+    Description: "API Gateway endpoint URL for Prod stage for Schools"
+    Value: !Sub "https://${SchoolApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/hello/"
+  GetSchoolsFunction:
+    Description: "GetSchools Lambda Function ARN"
+    Value: !GetAtt GetSchoolsFunction.Arn
+  GetCourseFunction:
+    Description: "GetCourse Lambda Function ARN"
+    Value: !GetAtt GetCourseFunction.Arn
+  GetGradesFunction:
+    Description: "GetGrades Lambda Function ARN"
+    Value: !GetAtt GetGradesFunction.Arn
+  GetSchoolsFunctionIamRole:
+    Description: "Implicit IAM Role created for GetSchools function"
+    Value: !GetAtt GetSchoolsFunctionRole.Arn
+  GetCourseFunctionIamRole:
+    Description: "Implicit IAM Role created for GetCourse function"
+    Value: !GetAtt GetCourseFunctionRole.Arn
+  GetGradesFunctionIamRole:
+    Description: "Implicit IAM Role created for GetGrades function"
+    Value: !GetAtt GetGradesFunctionRole.Arn
